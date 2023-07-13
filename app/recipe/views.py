@@ -123,7 +123,7 @@ class BaseRecipeAttrViewSet(mixins.DestroyModelMixin,
             int(self.request.query_params.get('assigned_only', 0))
         )
         queryset = self.queryset
-        
+
         if assigned_only:
             queryset = queryset.filter(recipe__isnull=False)
 
@@ -141,6 +141,73 @@ class TagViewSet(BaseRecipeAttrViewSet):
 
 class IngredientViewSet(BaseRecipeAttrViewSet):
     """Manage ingredients in the database."""
+
+    serializer_class = serializers.IngredientSerializer
+    queryset = Ingredient.objects.all()
+
+
+class BaseRecipeAttrMixClearViewSet(viewsets.GenericViewSet):
+    """ Base viewset for recipe attributes, but vithout ane mixins. """
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        assigned_only = bool(
+            int(self.request.query_params.get('assigned_only', 0))
+        )
+        queryset = self.queryset
+
+        if assigned_only:
+            queryset = queryset.filter(recipe__isnull=False)
+
+        return queryset.filter(
+            user=self.request.user
+        ).order_by('-name').distinct()
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial
+        )
+        serializer.is_valid(raise_exception=True)
+
+        serializer.save()  # <---- perform update
+
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class TagNoMixViewSet(BaseRecipeAttrMixClearViewSet):
+    """Manage tags in the database without mixins."""
+
+    serializer_class = serializers.TagSerializer
+    queryset = Tag.objects.all()
+
+
+class IngredientNoMixViewSet(BaseRecipeAttrMixClearViewSet):
+    """Manage ingredients in the database without mixins."""
 
     serializer_class = serializers.IngredientSerializer
     queryset = Ingredient.objects.all()
