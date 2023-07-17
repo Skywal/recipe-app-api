@@ -10,7 +10,7 @@ class NumberInFilter(filters.BaseInFilter, filters.NumberFilter):
     pass
 
 
-class RecipeFilter(filters.FilterSet):
+class RecipeViewSetFilter(filters.FilterSet):
     tags = NumberInFilter(field_name='tags__id', lookup_expr='in')
     ingredients = NumberInFilter(field_name='ingredients__id', lookup_expr='in')
 

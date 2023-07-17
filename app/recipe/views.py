@@ -46,6 +46,11 @@ from recipe import filters as my_filters
                 OpenApiTypes.STR,
                 description='Search'
             ),
+            OpenApiParameter(
+                'ordering',
+                OpenApiTypes.STR,
+                description='Ordering'
+            ),
         ]
     )
 )
@@ -56,9 +61,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
+    filter_backends = [filters.OrderingFilter, filters.SearchFilter, DjangoFilterBackend]
     
-    filterset_class = my_filters.RecipeFilter
+    filterset_class = my_filters.RecipeViewSetFilter
 
     search_fields = [
         'title',
@@ -67,27 +72,22 @@ class RecipeViewSet(viewsets.ModelViewSet):
         'ingredients__name'
     ]
 
-    # def _params_to_ints(self, qs):
-    #     """Convert a list of strings to integers."""
-    #     return [int(str_id) for str_id in qs.split(',')]
+    ordering_fields = [
+        'id',
+        'time_minutes'
+        'price'
+    ]
+
+    ordering = ['-id']  # default ordering
 
     def get_queryset(self):
         """Retrieve recipes for authenticated user."""
-        # tags = self.request.query_params.get('tags')
-        # ingredients = self.request.query_params.get('ingredients')
+
         queryset = self.queryset
-
-        # if tags:
-        #     tag_ids = self._params_to_ints(tags)
-        #     queryset = queryset.filter(tags__id__in=tag_ids)
-
-        # if ingredients:
-        #     ingredient_ids = self._params_to_ints(ingredients)
-        #     queryset = queryset.filter(ingredients__id__in=ingredient_ids)
 
         return queryset.filter(
             user=self.request.user
-        ).order_by('-id').distinct()
+        ).distinct()
 
     def get_serializer_class(self):
         """Return the serializer class for the request."""
@@ -128,6 +128,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 OpenApiTypes.STR,
                 description='Search'
             ),
+            OpenApiParameter(
+                'ordering',
+                OpenApiTypes.STR,
+                description='Ordering'
+            ),
         ]
     )
 )
@@ -139,9 +144,13 @@ class BaseRecipeAttrViewSet(mixins.DestroyModelMixin,
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter,]
 
     search_fields = ['name']
+
+    ordering_fields = ['id', 'name']
+    
+    ordering = ['-name']
 
     def get_queryset(self):
         """Retrieve tags for authenticated user."""
@@ -155,7 +164,7 @@ class BaseRecipeAttrViewSet(mixins.DestroyModelMixin,
 
         return queryset.filter(
             user=self.request.user
-        ).order_by('-name').distinct()
+        ).distinct()
 
 
 class TagViewSet(BaseRecipeAttrViewSet):
@@ -184,6 +193,11 @@ class IngredientViewSet(BaseRecipeAttrViewSet):
                 OpenApiTypes.STR,
                 description='Search'
             ),
+            OpenApiParameter(
+                'ordering',
+                OpenApiTypes.STR,
+                description='Ordering'
+            ),
         ]
     )
 )
@@ -192,9 +206,13 @@ class BaseRecipeAttrMixClearViewSet(viewsets.GenericViewSet):
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter,]
 
     search_fields = ['name']
+
+    ordering_fields = ['id', 'name']
+    
+    ordering = ['-name']
 
     def get_queryset(self):
         assigned_only = bool(
@@ -207,7 +225,7 @@ class BaseRecipeAttrMixClearViewSet(viewsets.GenericViewSet):
 
         return queryset.filter(
             user=self.request.user
-        ).order_by('-name').distinct()
+        ).distinct()
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
