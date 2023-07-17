@@ -37,12 +37,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'core.apps.CoreConfig',
+    
     'rest_framework',
     'rest_framework.authtoken',
     'drf_spectacular',
+    'django_filters',
+
+    'core.apps.CoreConfig',
     'user.apps.UserConfig',
-    'recipe.apps.RecipeConfig'
+    'recipe.apps.RecipeConfig',
 ]
 
 MIDDLEWARE = [
@@ -142,6 +145,7 @@ AUTH_USER_MODEL = 'core.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
 }
 
 SPECTACULAR_SETTINGS = {
