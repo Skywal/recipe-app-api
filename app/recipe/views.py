@@ -11,6 +11,7 @@ from rest_framework import (
     viewsets,
     mixins,
     status,
+    filters
 )
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -23,6 +24,7 @@ from core.models import (
     Ingredient,
 )
 from recipe import serializers
+from recipe import filters as my_filters
 
 
 @extend_schema_view(
@@ -49,14 +51,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    filterset_fields = [
-        'tags',
-        'ingredients',
-    ]
+    filterset_class = my_filters.RecipeFilter
 
-    def _params_to_ints(self, qs):
-        """Convert a list of strings to integers."""
-        return [int(str_id) for str_id in qs.split(',')]
+    # def _params_to_ints(self, qs):
+    #     """Convert a list of strings to integers."""
+    #     return [int(str_id) for str_id in qs.split(',')]
 
     def get_queryset(self):
         """Retrieve recipes for authenticated user."""
