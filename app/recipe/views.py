@@ -17,6 +17,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
 
 from core.models import (
     Recipe,
@@ -39,7 +40,12 @@ from recipe import filters as my_filters
                 'ingredients',
                 OpenApiTypes.STR,
                 description='Comma separated list of ingredient IDs to filter',
-            )
+            ),
+            OpenApiParameter(
+                'search',
+                OpenApiTypes.STR,
+                description='Search'
+            ),
         ]
     )
 )
@@ -50,8 +56,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
+    
     filterset_class = my_filters.RecipeFilter
+
+    search_fields = [
+        'title',
+        'description',
+        'tags__name',
+        'ingredients__name'
+    ]
 
     # def _params_to_ints(self, qs):
     #     """Convert a list of strings to integers."""
@@ -108,7 +122,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'assigned_only',
                 OpenApiTypes.INT, enum=[0, 1],
                 description='Filter by items assigned to recipes.',
-            )
+            ),
+            OpenApiParameter(
+                'search',
+                OpenApiTypes.STR,
+                description='Search'
+            ),
         ]
     )
 )
@@ -120,6 +139,9 @@ class BaseRecipeAttrViewSet(mixins.DestroyModelMixin,
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+
+    search_fields = ['name']
 
     def get_queryset(self):
         """Retrieve tags for authenticated user."""
@@ -149,12 +171,30 @@ class IngredientViewSet(BaseRecipeAttrViewSet):
     serializer_class = serializers.IngredientSerializer
     queryset = Ingredient.objects.all()
 
-
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                'assigned_only',
+                OpenApiTypes.INT, enum=[0, 1],
+                description='Filter by items assigned to recipes.',
+            ),
+            OpenApiParameter(
+                'search',
+                OpenApiTypes.STR,
+                description='Search'
+            ),
+        ]
+    )
+)
 class BaseRecipeAttrMixClearViewSet(viewsets.GenericViewSet):
     """ Base viewset for recipe attributes, but vithout ane mixins. """
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+
+    search_fields = ['name']
 
     def get_queryset(self):
         assigned_only = bool(
